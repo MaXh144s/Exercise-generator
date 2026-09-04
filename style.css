@@ -1,0 +1,893 @@
+:root {
+  --cor-primaria: #1e3a5f;
+  --cor-secundaria: #4a6b8a;
+  --cor-verde: #6fac46;
+  --cor-borda: #d0d7de;
+  --cor-fundo-app: #eef1f4;
+  --cor-fundo-folha: #ffffff;
+  --fonte: 'Georgia', 'Times New Roman', serif;
+  --fonte-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* --escala: aplica-se ao que não é nem enunciado nem alternativa (número
+     da questão, fonte inline, banner de seção, espaçamentos). As outras
+     duas controlam só o respectivo grupo, de forma independente. */
+  --escala: 1;
+  --escala-enunciado: 1;
+  --escala-alternativas: 1;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte-ui);
+  background: var(--cor-fundo-app);
+  color: #1a1a1a;
+}
+
+/* ---------- Painel de controle (não imprime) ---------- */
+.painel {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.painel h1 {
+  font-size: 1.4rem;
+  color: var(--cor-primaria);
+  margin-bottom: 4px;
+}
+
+.painel .subtitulo {
+  color: #667;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.caixa {
+  background: var(--cor-fundo-folha);
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.caixa h2 {
+  font-size: 1rem;
+  margin: 0 0 10px;
+  color: var(--cor-primaria);
+}
+
+.drop-area {
+  border: 2px dashed var(--cor-borda);
+  border-radius: 8px;
+  padding: 22px;
+  text-align: center;
+  color: #667;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 0.9rem;
+}
+
+.drop-area:hover, .drop-area.arrastando {
+  background: #f5f8fb;
+  border-color: var(--cor-secundaria);
+}
+
+.drop-area input { display: none; }
+
+textarea#jsonTexto {
+  width: 100%;
+  min-height: 140px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.82rem;
+  padding: 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  resize: vertical;
+  margin-top: 10px;
+}
+
+.linha-botoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+button {
+  font-family: var(--fonte-ui);
+  font-size: 0.88rem;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--cor-primaria);
+  background: var(--cor-primaria);
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+button:hover { opacity: 0.88; }
+
+button.secundario {
+  background: white;
+  color: var(--cor-primaria);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+#status.erro { color: #b3261e; }
+#status.ok { color: #1e6b3e; }
+
+.opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 0.87rem;
+}
+
+.opcoes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.campo-fonte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alvo-fonte {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #445;
+}
+
+.alvo-fonte label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.stepper-fonte {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.stepper-btn {
+  background: transparent;
+  border: none;
+  color: var(--cor-primaria);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1;
+  width: 32px;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.stepper-btn:hover {
+  background: var(--cor-fundo-app);
+  opacity: 1;
+}
+
+.stepper-btn:active {
+  background: #dde3ea;
+}
+
+.stepper-fonte input[type="number"] {
+  width: 48px;
+  height: 34px;
+  text-align: center;
+  font-family: var(--fonte-ui);
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--cor-borda);
+  border-right: 1px solid var(--cor-borda);
+  padding: 0;
+  /* remove as setinhas nativas do input number, já temos os botões -/+ */
+  appearance: textfield;
+}
+
+.stepper-fonte input[type="number"]::-webkit-outer-spin-button,
+.stepper-fonte input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dica-fonte {
+  color: #778;
+  font-size: 0.78rem;
+}
+
+/* ---------- Área de resultado / folhas A4 ---------- */
+#resultado { margin-top: 24px; }
+
+.barra-acoes {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.aviso-paginacao {
+  font-size: 0.8rem;
+  color: #b3261e;
+  margin-bottom: 10px;
+}
+
+/* A folha tem altura FIXA de 297mm (padrão A4) e overflow escondido:
+   o JS mede o conteúdo antes de montar cada folha, então nada deveria
+   estourar — o overflow:hidden é uma rede de segurança contra
+   arredondamentos de sub-pixel, nunca corta questão no meio de propósito. */
+.folha {
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto 24px;
+  background: var(--cor-fundo-folha);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  padding: 8mm 10mm 8mm;  /* topo: 8mm · direita/esquerda: 10mm · baixo: 8mm */
+  font-family: var(--fonte);
+  color: #111;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Altura FIXA (não só mínima): o cabeçalho nunca deve crescer, nem quando
+   o título precisa quebrar em mais de uma linha — nesse caso é a fonte do
+   título que diminui (ver .cab-titulo e obterEstiloTitulo no JS), nunca o
+   cabeçalho. overflow:hidden é a rede de segurança final. */
+.folha-cabecalho {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 16mm;
+  min-height: 16mm;
+  border-bottom: 4px solid var(--cor-primaria);
+  padding-bottom: 4mm;
+  margin-bottom: 10px;
+  font-family: var(--fonte-ui);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Bloco esquerdo (título + fonte). Largura limitada em mm para nunca
+   invadir a faixa central onde a logo fica (a logo tem max-width:40% do
+   cabeçalho, ou seja, ocupa de ~57mm a ~133mm dos 190mm de largura —
+   50mm de limite aqui deixa uma folga segura antes dela). Sem esse
+   limite, um título longo cresce livremente pelo flex e passa POR TRÁS
+   da logo (que fica por cima) em vez de quebrar linha. */
+.folha-cabecalho .cab-bloco {
+  max-width: 50mm;
+  min-width: 0;
+}
+
+/* O container ocupa exatamente a mesma área do cabeçalho: do topo da
+   página até a linha divisória (inset:0 = mesmos limites do padding-box
+   de .folha-cabecalho, sem incluir a borda). Sendo absolute, não soma
+   altura/largura ao layout — só sobrepõe. O flexbox centraliza a logo
+   tanto na horizontal quanto na vertical dentro dessa área. */
+.folha-logo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.folha-logo img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: 14mm;
+  max-width: 40%;
+}
+
+.folha-cabecalho .cab-titulo {
+  font-size: 0.95rem; /* tamanho base — reduzido via style inline pelo JS
+    (obterEstiloTitulo) quando o título não cabe em até 3 linhas dentro
+    da altura fixa do cabeçalho */
+  font-weight: bold;
+  color: var(--cor-primaria);
+  text-transform: uppercase;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Rede de segurança final: se mesmo na fonte mínima o título ainda não
+   coubesse em 3 linhas (título absurdamente longo), corta o excesso em
+   vez de deixar o cabeçalho crescer. Altura em "em" (3 linhas × line-height
+   1.25) para acompanhar o font-size inline aplicado no mesmo elemento. */
+.cab-titulo--limite {
+  max-height: 3.75em;
+  overflow: hidden;
+}
+
+.folha-cabecalho .cab-fonte {
+  font-size: 0.72rem;
+  color: #667;
+}
+
+.folha-cabecalho .cab-meta {
+  font-size: 0.92rem;
+  font-weight: bold;
+  font-style: italic;
+  color: var(--cor-primaria);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Corpo em duas colunas com divisória central, como uma apostila impressa.
+   Sem gap no flex container — o espaçamento vem só do padding de cada
+   coluna junto à linha divisória, então o texto fica bem próximo dela
+   (~1 caractere), nunca colado. */
+.folha-corpo {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.folha-coluna {
+  flex: 1;
+  min-width: 0;
+}
+
+.folha-coluna--esquerda {
+  padding-right: 2.5mm;
+  border-right: 1px solid var(--cor-borda);
+}
+
+.folha-coluna--direita {
+  padding-left: 2.5mm;
+}
+
+/* Banner de seção (ex.: "Exercícios Propostos"), usado só no topo da
+   primeira coluna da primeira folha. */
+.folha-banner-secao {
+  background: var(--cor-verde);
+  color: #fff;
+  font-family: var(--fonte-ui);
+  font-size: calc(0.78rem * var(--escala));
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: calc(1px * var(--escala)) 8px;
+  margin-bottom: calc(10px * var(--escala));
+  break-inside: avoid;
+}
+
+/* Modo economia de tinta: some com o preenchimento colorido do banner,
+   deixando só o texto em preto (uma linha embaixo mantém a separação
+   visual da seção sem gastar tinta). */
+body.economia-tinta .folha-banner-secao {
+  background: none;
+  color: #000;
+  border-bottom: 1px solid #000;
+}
+
+.questao {
+  /* Modo padrão ("priorizar questões"): acompanha a escala geral de fonte,
+     igual ao comportamento original. Modo "priorizar alternativas" define
+     --espaco-questao (em mm, escolhido pelo usuário) e passa a mandar. */
+  margin-bottom: var(--espaco-questao, calc(12px * var(--escala)));
+  break-inside: avoid;
+}
+
+/* Número, fonte (se houver) e enunciado ficam todos na mesma "linha"
+   (na verdade um bloco só, que quebra normalmente quando o texto é
+   longo) — por isso o número não fica sozinho numa linha própria. */
+.questao-linha {
+  margin: calc(2px * var(--escala)) 0 calc(4px * var(--escala));
+  text-align: justify;
+}
+
+.questao-numero {
+  font-weight: bold;
+  font-size: calc(0.92rem * var(--escala));
+  color: var(--cor-primaria);
+}
+
+.questao-fonte-inline {
+  font-size: calc(0.7rem * var(--escala));
+  color: #667;
+  font-style: italic;
+}
+
+.questao-enunciado {
+  font-size: calc(0.86rem * var(--escala-enunciado));
+  line-height: 1.32;
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.questao-antecipacao {
+  font-size: calc(0.84rem * var(--escala-enunciado));
+  line-height: 1.3;
+  text-align: justify;
+  white-space: pre-line;
+  overflow-wrap: break-word;
+  margin-bottom: calc(4px * var(--escala-enunciado));
+}
+
+/* Caixa de dados simples que pode acompanhar uma questão (ex.: embalagem
+   x preço). Sem cabeçalho especial — cada linha do JSON é uma <tr>, cada
+   célula uma <td>; a primeira coluna costuma ser o rótulo da linha, mas
+   isso é decidido pelo autor do JSON, não fixado aqui. */
+.questao-tabela {
+  border-collapse: collapse;
+  margin: calc(6px * var(--escala-enunciado)) auto calc(8px * var(--escala-enunciado));
+  font-size: calc(0.8rem * var(--escala-enunciado));
+  line-height: 1.3;
+  max-width: 100%;
+}
+
+.questao-tabela td {
+  border: 1px solid #333;
+  padding: calc(2px * var(--escala-enunciado)) calc(7px * var(--escala-enunciado));
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+/* Gráficos (eixo X/Y com valores + pontos), gerados como SVG. O SVG usa
+   um viewBox fixo (520x320) e width:100%, então escala junto com a
+   largura da coluna — inclusive o tamanho dos textos, que é definido em
+   unidades do próprio viewBox. */
+.questao-grafico {
+  margin: calc(6px * var(--escala-enunciado)) auto calc(10px * var(--escala-enunciado));
+  max-width: 100%;
+}
+
+.grafico-titulo-caixa {
+  text-align: center;
+  font-size: calc(0.78rem * var(--escala-enunciado));
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.grafico-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.grafico-grade {
+  stroke: #ccc;
+  stroke-width: 1;
+  stroke-dasharray: 2, 2;
+}
+
+.grafico-eixo {
+  stroke: #333;
+  stroke-width: 1.4;
+}
+
+.grafico-linha {
+  fill: none;
+  stroke-width: 2.2;
+}
+
+.grafico-rotulo {
+  font-size: calc(9.5px * var(--escala-enunciado));
+  font-family: inherit;
+  fill: #333;
+}
+
+.grafico-rotulo-ponto {
+  font-size: calc(9px * var(--escala-enunciado));
+  font-family: inherit;
+  fill: #222;
+}
+
+.grafico-titulo-eixo {
+  font-size: calc(10px * var(--escala-enunciado));
+  font-family: inherit;
+  font-weight: 600;
+  fill: #222;
+}
+
+.grafico-legenda {
+  font-size: calc(9.5px * var(--escala-enunciado));
+  font-family: inherit;
+  fill: #222;
+}
+
+/* Alternativas: se TODAS couberem lado a lado na largura da coluna,
+   ficam numa linha só (alternativas--linha); se não couberem, o JS tenta
+   distribuir em 2 ou 3 colunas verticais (alternativas--colunas, ver
+   .alternativas-coluna); se só 1 coluna for necessária, cada alternativa
+   ocupa sua própria linha numa coluna só (alternativas--coluna) — o
+   mesmo layout usado sempre que "Priorizar espaço até a próxima questão"
+   está ativo. O JS decide qual classe usar por questão, medindo a
+   largura/altura natural antes de montar o HTML final. */
+.alternativas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alternativas li {
+  display: flex;
+  gap: 4px;
+  font-size: calc(0.84rem * var(--escala-alternativas));
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.alt-letra {
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Variante: todas as alternativas numa única linha */
+.alternativas--linha {
+  display: flex;
+  flex-wrap: nowrap;
+  column-gap: calc(16px * var(--escala-alternativas));
+}
+
+.alternativas--linha li {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Variante: uma alternativa por linha */
+.alternativas--coluna {
+  display: flex;
+  flex-direction: column;
+  row-gap: calc(2px * var(--escala-alternativas));
+}
+
+.alternativas--coluna li {
+  width: 100%;
+}
+
+/* Variante: alternativas distribuídas em 2 ou 3 colunas (modo normal,
+   quando não cabem todas numa linha só). Cada coluna é uma lista vertical
+   própria (uma alternativa por linha dentro dela); o espaço entre colunas
+   é dividido automaticamente pelo flex — recalcula sozinho se a largura
+   disponível mudar. */
+.alternativas--colunas {
+  display: flex;
+  align-items: flex-start;
+  column-gap: calc(14px * var(--escala-alternativas));
+}
+
+.alternativas-coluna {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  row-gap: calc(2px * var(--escala-alternativas));
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.alternativas-coluna li {
+  display: flex;
+  gap: 4px;
+  font-size: calc(0.84rem * var(--escala-alternativas));
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: break-word;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Usada só durante a medição: mede a largura que a lista ocuparia se
+   tudo ficasse numa linha só (sem quebrar), independente da largura
+   real da coluna — para decidir se "cabe em linha" ou não. Precisa usar
+   a MESMA escala da renderização final (--escala-alternativas), senão a
+   decisão linha/coluna fica errada quando essa escala for diferente da
+   geral. */
+.alternativas--medindo {
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+  column-gap: calc(16px * var(--escala-alternativas));
+}
+
+.alternativas--medindo li {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.folha-rodape {
+  text-align: right;
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: #444;
+  padding-top: 6px;
+  border-top: 1px solid var(--cor-borda);
+  font-family: var(--fonte-ui);
+  flex-shrink: 0;
+}
+
+.vazio {
+  text-align: center;
+  color: #888;
+  padding: 40px 20px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Container de medição invisível ----------
+   Fica fora da tela mas totalmente renderizado (não é display:none,
+   senão offsetHeight sempre daria 0). O JS usa isso para medir a
+   altura real de cada questão antes de decidir em qual coluna/folha
+   ela entra, então a paginação bate exatamente com o resultado final. */
+.folha-medicao {
+  position: fixed;
+  top: 0;
+  left: -99999px;
+  visibility: hidden;
+  overflow: visible;
+  font-family: var(--fonte);
+}
+
+/* ---------- Modal de exemplo JSON ---------- */
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 25, 35, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.modal-fundo[hidden] { display: none; }
+
+.modal-caixa {
+  background: var(--cor-fundo-folha);
+  border-radius: 10px;
+  max-width: 640px;
+  width: 100%;
+  padding: 22px 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+
+.modal-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.modal-cabecalho h2 {
+  font-size: 1.05rem;
+  color: var(--cor-primaria);
+  margin: 0;
+}
+
+.modal-cabecalho .fechar {
+  background: none;
+  border: none;
+  color: #667;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.modal-cabecalho .fechar:hover { color: #222; opacity: 1; }
+
+.modal-explicacao {
+  font-size: 0.87rem;
+  color: #555;
+  margin: 8px 0 14px;
+  line-height: 1.5;
+}
+
+.modal-explicacao code {
+  background: #eef1f4;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.83em;
+}
+
+.alternador-exemplo {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+  margin-bottom: 10px;
+}
+
+.alternador-exemplo label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.modal-pre {
+  background: #f5f8fb;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  padding: 14px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  max-height: 380px;
+  overflow: auto;
+  white-space: pre;
+  margin: 0 0 4px;
+}
+
+#statusCopia {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #1e6b3e;
+  min-height: 1.2em;
+}
+
+/* ---------- Modal de download (escolher folhas para baixar em PDF) ---------- */
+.modal-caixa--grande {
+  max-width: 760px;
+}
+
+.modo-download {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.modo-btn {
+  font-family: var(--fonte-ui);
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--cor-borda);
+  background: white;
+  color: #445;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.modo-btn:hover { opacity: 1; border-color: var(--cor-secundaria); }
+
+.modo-btn.ativo {
+  background: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+  color: white;
+}
+
+.campo-personalizada {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.87rem;
+  margin-bottom: 14px;
+}
+
+.campo-personalizada input[type="number"] {
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 6px;
+  font-size: 0.87rem;
+}
+
+/* Lista rolável com as miniaturas reais das folhas — o usuário rola de
+   cima a baixo para conferir tudo antes de confirmar o download. */
+.lista-paginas-modal {
+  max-height: 55vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--cor-fundo-app);
+  border: 1px solid var(--cor-borda);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.pagina-miniatura {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.lista-paginas-modal.selecionavel .pagina-miniatura {
+  cursor: pointer;
+}
+
+/* Miniatura = clone real da .folha, encolhido via transform:scale dentro
+   de uma caixa de tamanho fixo (proporção A4) com overflow:hidden. */
+.pagina-miniatura-escala {
+  --escala-miniatura: 0.32;
+  width: calc(210mm * var(--escala-miniatura));
+  height: calc(297mm * var(--escala-miniatura));
+  overflow: hidden;
+  position: relative;
+  background: var(--cor-fundo-folha);
+  border: 2px solid transparent;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.pagina-miniatura.selecionada .pagina-miniatura-escala {
+  border-color: var(--cor-verde);
+}
+
+.pagina-miniatura-escala .folha {
+  transform: scale(var(--escala-miniatura));
+  transform-origin: top left;
+  margin: 0;
+  box-shadow: none;
+}
+
+.pagina-miniatura-legenda {
+  font-size: 0.78rem;
+  color: #556;
+  font-family: var(--fonte-ui);
+}
+
+#statusDownload {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+#statusDownload.erro { color: #b3261e; }
+#statusDownload.ok { color: #1e6b3e; }
+
+/* ---------- Impressão manual (Ctrl+P), fora do fluxo de download ---------- */
+@media print {
+  .painel > *:not(#resultado) { display: none !important; }
+  .painel { max-width: none; padding: 0; margin: 0; }
+  body { background: white; }
+  .barra-acoes { display: none !important; }
+  .folha-medicao { display: none !important; }
+  .modal-fundo { display: none !important; }
+  /* Sem isso, os navegadores ignoram cores de fundo na impressão (para
+     economizar tinta) — é por isso que o banner verde sumia ao imprimir. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .folha {
+    box-shadow: none;
+    margin: 0;
+    page-break-after: always;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}

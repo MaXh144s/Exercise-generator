@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Montador de Questões — A4</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="painel">
+  <h1>Montador de Questões — Folha A4</h1>
+  <div class="subtitulo">Envie ou cole um JSON com as questões. O sistema calcula automaticamente quantas cabem em cada folha, em duas colunas, sem cortar nenhuma no meio.</div>
+
+  <div class="caixa">
+    <h2>1. Dados (arquivo JSON)</h2>
+    <div class="drop-area" id="dropArea">
+      📄 Clique aqui ou arraste um arquivo .json
+      <input type="file" id="arquivoInput" accept=".json,application/json">
+    </div>
+    <textarea id="jsonTexto" placeholder='Ou cole o JSON aqui. Exemplo:
+{
+  "titulo": "Simulado 1",
+  "fonte": "Prof. Fulano",
+  "questoes": [
+    {
+      "numero": 1,
+      "enunciado": "Texto do enunciado da questão...",
+      "fonte": "ENEM, 2023.",
+      "tabela": [
+        ["Embalagem", "250 gramas", "500 gramas"],
+        ["Preço", "R$ 2,70", "R$ 5,10"]
+      ],
+      "antecipacao": "Considerando o texto, é correto afirmar que:",
+      "alternativas": [
+        "Texto da alternativa A",
+        "Texto da alternativa B",
+        "Texto da alternativa C",
+        "Texto da alternativa D",
+        "Texto da alternativa E"
+      ]
+    }
+  ]
+}'></textarea>
+    <div class="linha-botoes">
+      <button id="btnGerar">Gerar folhas</button>
+      <button id="btnLimpar" class="secundario">Limpar</button>
+      <button id="btnExemplo" class="secundario">Ver exemplo JSON</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="caixa">
+    <h2>2. Opções de layout</h2>
+    <div class="opcoes">
+      <div class="campo-fonte">
+        <label for="inputFonte">Tamanho da fonte</label>
+        <div class="alvo-fonte">
+          <label><input type="radio" name="alvoFonte" value="geral" checked> Geral</label>
+          <label><input type="radio" name="alvoFonte" value="enunciado"> Enunciados</label>
+          <label><input type="radio" name="alvoFonte" value="alternativas"> Alternativas</label>
+        </div>
+        <div class="stepper-fonte">
+          <button type="button" id="btnFonteMenos" class="stepper-btn" aria-label="Diminuir fonte">−</button>
+          <input type="number" id="inputFonte" min="8" max="20" step="1" value="12">
+          <button type="button" id="btnFonteMais" class="stepper-btn" aria-label="Aumentar fonte">+</button>
+        </div>
+        <span class="dica-fonte">Escolha o que a fonte deve afetar acima. Diminua para caber mais questões por folha</span>
+      </div>
+      <div class="campo-fonte">
+        <label>Priorização de layout</label>
+        <div class="alvo-fonte">
+          <label><input type="radio" name="modoPrioridade" value="questoes" checked> Priorizar número de questões</label>
+          <label><input type="radio" name="modoPrioridade" value="alternativas"> Priorizar espaço até a próxima questão</label>
+        </div>
+        <div class="stepper-fonte" id="blocoEspacoAlternativas" hidden>
+          <button type="button" id="btnEspacoMenos" class="stepper-btn" aria-label="Diminuir espaço">−</button>
+          <input type="number" id="inputEspacoAlternativas" min="2" max="30" step="1" value="8">
+          <button type="button" id="btnEspacoMais" class="stepper-btn" aria-label="Aumentar espaço">+</button>
+        </div>
+        <span class="dica-fonte" id="dicaEspacoAlternativas" hidden>Espaço, em mm, entre as alternativas e a próxima questão. Quanto maior, menos questões cabem por folha.</span>
+      </div>
+      <label><input type="checkbox" id="chkGabarito"> Marcar alternativa correta (se houver campo "correta")</label>
+      <label><input type="checkbox" id="chkEconomiaTinta"> Modo economia de tinta (remove o fundo colorido do banner de seção)</label>
+    </div>
+  </div>
+
+  <div id="resultado">
+    <div class="vazio">Nenhuma folha gerada ainda. Envie um JSON acima e clique em "Gerar folhas".</div>
+  </div>
+</div>
+
+<div id="modalExemplo" class="modal-fundo" hidden>
+  <div class="modal-caixa">
+    <div class="modal-cabecalho">
+      <h2>Estrutura esperada do JSON</h2>
+      <button id="btnFecharModal" class="fechar" aria-label="Fechar">&times;</button>
+    </div>
+    <p class="modal-explicacao">
+      O JSON deve ter um array <code>questoes</code>. Cada questão pode ter os campos abaixo
+      (<code>numero</code>, <code>enunciado</code> e <code>alternativas</code> são os essenciais —
+      o campo <code>correta</code> é opcional, só é usado se você marcar "Marcar alternativa correta").
+      O campo <code>tabela</code> também é opcional: um array de linhas, cada linha um array de células
+      (ex.: <code>[["Embalagem","250 gramas"],["Preço","R$ 2,70"]]</code>), exibido como uma caixa com
+      bordas logo abaixo do enunciado.
+    </p>
+    <p class="modal-explicacao">
+      Fora do array <code>questoes</code>, o campo <code>secao</code> é opcional: define o texto do
+      banner que aparece no topo da primeira coluna (ex.: <code>"Exercícios ENEM"</code>,
+      <code>"Lista de Exercícios"</code> ou qualquer outro título). Se omitido, o padrão é
+      "Exercícios Propostos".
+    </p>
+    <div class="alternador-exemplo">
+      <label><input type="radio" name="tipoExemplo" value="comGabarito" checked> Com gabarito (campo "correta")</label>
+      <label><input type="radio" name="tipoExemplo" value="semGabarito"> Sem gabarito</label>
+    </div>
+    <pre id="exemploJsonTexto" class="modal-pre"></pre>
+    <div class="linha-botoes">
+      <button id="btnCopiarExemplo">📋 Copiar exemplo</button>
+      <button id="btnUsarExemplo" class="secundario">Usar este exemplo</button>
+    </div>
+    <div id="statusCopia"></div>
+  </div>
+</div>
+
+<!-- Modal de download: escolher quais folhas baixar (não imprime — gera
+     um PDF real via html2canvas + jsPDF e dispara o download do arquivo). -->
+<div id="modalDownload" class="modal-fundo" hidden>
+  <div class="modal-caixa modal-caixa--grande">
+    <div class="modal-cabecalho">
+      <h2>Baixar questões em PDF</h2>
+      <button id="btnFecharModalDownload" class="fechar" aria-label="Fechar">&times;</button>
+    </div>
+    <p class="modal-explicacao">
+      Escolha o que baixar. Role a lista abaixo para conferir todas as folhas antes de confirmar —
+      em "Página atual" e "Personalizada", todas aparecem para você navegar, mas só a folha marcada é baixada.
+    </p>
+
+    <div id="modoDownload" class="modo-download">
+      <button type="button" class="modo-btn" data-modo="todas">Todas as páginas</button>
+      <button type="button" class="modo-btn" data-modo="atual">Página atual</button>
+      <button type="button" class="modo-btn" data-modo="impares">Ímpares</button>
+      <button type="button" class="modo-btn" data-modo="pares">Pares</button>
+      <button type="button" class="modo-btn" data-modo="personalizada">Personalizada</button>
+    </div>
+
+    <div id="campoPersonalizada" class="campo-personalizada" hidden>
+      <label for="inputPaginaPersonalizada">Ir para a página:</label>
+      <input type="number" id="inputPaginaPersonalizada" min="1" step="1">
+      <button type="button" id="btnIrPagina" class="secundario">Ir</button>
+    </div>
+
+    <div id="listaPaginasModal" class="lista-paginas-modal"></div>
+
+    <div id="statusDownload"></div>
+
+    <div class="linha-botoes">
+      <button id="btnBaixarSelecao">⬇️ Baixar</button>
+      <button id="btnCancelarDownload" class="secundario">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
