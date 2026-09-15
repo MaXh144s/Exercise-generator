@@ -8,6 +8,7 @@
   const resultadoEl = document.getElementById('resultado');
   const chkGabarito = document.getElementById('chkGabarito');
   const chkEconomiaTinta = document.getElementById('chkEconomiaTinta');
+  const chkFracaoInline = document.getElementById('chkFracaoInline');
   const inputFonte = document.getElementById('inputFonte');
   const btnFonteMenos = document.getElementById('btnFonteMenos');
   const btnFonteMais = document.getElementById('btnFonteMais');
@@ -364,6 +365,8 @@
 
   chkGabarito.addEventListener('change', () => { if (dadosAtuais) montarEExibir(dadosAtuais); });
 
+  chkFracaoInline.addEventListener('change', () => { if (dadosAtuais) montarEExibir(dadosAtuais); });
+
   // Modo economia de tinta: só alterna uma classe no body — o CSS cuida de
   // remover o fundo colorido do banner de seção. Não precisa remontar as
   // folhas, e a classe fica no body, então também vale para as miniaturas
@@ -602,13 +605,145 @@
     return div.innerHTML;
   }
 
+  // ---------- Fórmulas matemáticas (KaTeX) ----------
+  // Texto de enunciado/antecipação/alternativas/tabela pode misturar texto
+  // normal com fórmulas em notação LaTeX, delimitadas por $...$ (fórmula no
+  // meio da frase) ou $$...$$ (fórmula centralizada, em bloco). Tudo que
+  // NÃO está entre esses delimitadores continua passando por escapeHtml
+  // normalmente (mantendo a segurança contra injeção de HTML); só o
+  // conteúdo dentro dos delimitadores é interpretado como LaTeX.
+  // Regex: tenta casar bloco ($$...$$) antes de inline ($...$) para que
+  // "$$x$$" não seja lido como dois "$...$" vazios/errados.
+  const REGEX_MATEMATICA = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
+
+  // Extrai um argumento de comando LaTeX a partir do índice `idx`: se for
+  // um grupo {...}, devolve o conteúdo (respeitando chaves aninhadas); se
+  // for um único caractere solto (ex.: \frac12), devolve só ele. Usado
+  // pelo conversor de frações para formato inline (a/b) abaixo.
+  function extrairArgumentoLatex(str, idx) {
+    let i = idx;
+    while (i < str.length && /\s/.test(str[i])) i++;
+    if (str[i] === '{') {
+      let profundidade = 1;
+      let j = i + 1;
+      while (j < str.length && profundidade > 0) {
+        if (str[j] === '{') profundidade++;
+        else if (str[j] === '}') profundidade--;
+        j++;
+      }
+      return { valor: str.slice(i + 1, j - 1), proximoIndice: j };
+    }
+    if (i < str.length) return { valor: str[i], proximoIndice: i + 1 };
+    return { valor: '', proximoIndice: i };
+  }
+
+  // Converte \frac{a}{b} (e variantes \dfrac/\tfrac/\cfrac) para o formato
+  // "a/b" em vez da fração empilhada tradicional — útil quando o espaço
+  // vertical é apertado (ex.: alternativas de questão). Recursivo, pra
+  // lidar com frações dentro de frações. Envolve numerador/denominador em
+  // \left(...\right) quando eles têm mais de um "átomo" (operadores,
+  // espaços etc.), pra não perder a precedência (ex.: (x+1)/(x-1) em vez
+  // de x+1/x-1).
+  function converterFracoesParaInline(latex) {
+    const REGEX_FRAC = /\\(?:d|t|c)?frac/;
+    let resultado = '';
+    let i = 0;
+    while (i < latex.length) {
+      const m = REGEX_FRAC.exec(latex.slice(i));
+      if (!m) {
+        resultado += latex.slice(i);
+        break;
+      }
+      const inicioComando = i + m.index;
+      resultado += latex.slice(i, inicioComando);
+      let cursor = inicioComando + m[0].length;
+      const num = extrairArgumentoLatex(latex, cursor);
+      cursor = num.proximoIndice;
+      const den = extrairArgumentoLatex(latex, cursor);
+      cursor = den.proximoIndice;
+
+      const precisaParen = (v) => !/^[A-Za-z0-9]$/.test(v.trim());
+      const numConvertido = converterFracoesParaInline(num.valor.trim());
+      const denConvertido = converterFracoesParaInline(den.valor.trim());
+      const numFinal = precisaParen(num.valor) ? `\\left(${numConvertido}\\right)` : numConvertido;
+      const denFinal = precisaParen(den.valor) ? `\\left(${denConvertido}\\right)` : denConvertido;
+
+      resultado += `${numFinal}/${denFinal}`;
+      i = cursor;
+    }
+    return resultado;
+  }
+
+  // Uma fórmula inline ($...$) com \frac, \dfrac, \tfrac ou \binom é
+  // renderizada pelo KaTeX com numerador/denominador empilhados — bem
+  // mais alta que uma linha de texto normal. Se ela ficar solta no meio
+  // do fluxo do parágrafo, o navegador ajusta a altura da linha (line box)
+  // automaticamente, mas sem folga alguma acima/abaixo: o traço da fração
+  // encosta no texto da linha anterior/seguinte. Quando o modo "frações
+  // inline (a/b)" está ativo essa conversão já achata a fração numa única
+  // linha, então não precisa de espaço extra.
+  const REGEX_FORMULA_EMPILHADA = /\\(?:d|t)?frac\b|\\binom\b/;
+  function ehFormulaEmpilhada(latex, ehBloco, fracaoInline) {
+    return !ehBloco && !fracaoInline && REGEX_FORMULA_EMPILHADA.test(latex);
+  }
+
+  function renderizarTextoComMatematica(texto, fracaoInline) {
+    if (texto == null || texto === '') return '';
+    const str = String(texto);
+
+    // Sem $ no texto, nem vale a pena rodar a regex — caminho mais comum.
+    if (str.indexOf('$') === -1) return escapeHtml(str);
+
+    // Se a biblioteca não carregou (ex.: sem internet), cai para texto puro
+    // escapado, incluindo os cifrões — melhor que quebrar a página.
+    if (typeof katex === 'undefined') return escapeHtml(str);
+
+    let resultado = '';
+    let ultimoIndice = 0;
+    let m;
+    REGEX_MATEMATICA.lastIndex = 0;
+
+    while ((m = REGEX_MATEMATICA.exec(str)) !== null) {
+      if (m.index > ultimoIndice) {
+        resultado += escapeHtml(str.slice(ultimoIndice, m.index));
+      }
+
+      const ehBloco = m[1] !== undefined;
+      let latex = ehBloco ? m[1] : m[2];
+      if (fracaoInline) latex = converterFracoesParaInline(latex);
+
+      try {
+        const html = katex.renderToString(latex, {
+          throwOnError: false,
+          displayMode: ehBloco,
+          strict: 'ignore'
+        });
+        resultado += ehFormulaEmpilhada(latex, ehBloco, fracaoInline)
+          ? `<span class="formula-alta">${html}</span>`
+          : html;
+      } catch (e) {
+        // Fórmula malformada: mostra o texto original escapado em vez de
+        // derrubar a renderização da questão inteira.
+        resultado += escapeHtml(ehBloco ? `$$${latex}$$` : `$${latex}$`);
+      }
+
+      ultimoIndice = REGEX_MATEMATICA.lastIndex;
+    }
+
+    if (ultimoIndice < str.length) {
+      resultado += escapeHtml(str.slice(ultimoIndice));
+    }
+
+    return resultado;
+  }
+
   // Tabela simples com bordas, tipo as caixas de dados que acompanham
   // questões (ex.: embalagem x preço). Sem cabeçalho especial — todas as
   // linhas/células são tratadas igual, cada uma é um array de textos.
   function montarTabelaHtml(tabela) {
     if (!tabela || !tabela.length) return '';
     const linhasHtml = tabela.map(linha =>
-      `<tr>${linha.map(celula => `<td>${escapeHtml(celula)}</td>`).join('')}</tr>`
+      `<tr>${linha.map(celula => `<td>${renderizarTextoComMatematica(celula)}</td>`).join('')}</tr>`
     ).join('');
     return `<table class="questao-tabela">${linhasHtml}</table>`;
   }
@@ -803,7 +938,7 @@
     const letra = letraAlternativa(idx);
     const ehCorreta = marcarGabarito && q.correta != null &&
       (String(q.correta).toUpperCase() === letra || String(q.correta) === String(idx));
-    return `<li><span class="alt-letra">${letra})</span><span>${escapeHtml(alt)}${ehCorreta ? ' ✔' : ''}</span></li>`;
+    return `<li><span class="alt-letra">${letra})</span><span>${renderizarTextoComMatematica(alt, chkFracaoInline.checked)}${ehCorreta ? ' ✔' : ''}</span></li>`;
   }
 
   function montarQuestaoHtml(q) {
@@ -830,11 +965,11 @@
       `<div class="questao-linha">` +
       `<span class="questao-numero">${escapeHtml(q.numero)}) </span>` +
       (q.fonte ? `<span class="questao-fonte-inline">${escapeHtml(q.fonte)} </span>` : '') +
-      (q.enunciado ? `<span class="questao-enunciado">${escapeHtml(q.enunciado)}</span>` : '') +
+      (q.enunciado ? `<span class="questao-enunciado">${renderizarTextoComMatematica(q.enunciado)}</span>` : '') +
       `</div>` +
       (q.tabela ? montarTabelaHtml(q.tabela) : '') +
       (q.grafico ? montarGraficoHtml(q.grafico) : '') +
-      (q.antecipacao ? `<div class="questao-antecipacao">${escapeHtml(q.antecipacao)}</div>` : '') +
+      (q.antecipacao ? `<div class="questao-antecipacao">${renderizarTextoComMatematica(q.antecipacao)}</div>` : '') +
       altsHtml +
       `</div>`;
   }
@@ -960,7 +1095,7 @@
   // na distribuição entre colunas.
   function medirPesosAlternativas(container, q) {
     const itensHtml = q.alternativas.map((alt, idx) =>
-      `<li><span class="alt-letra">${letraAlternativa(idx)})</span><span>${escapeHtml(alt)}</span></li>`
+      `<li><span class="alt-letra">${letraAlternativa(idx)})</span><span>${renderizarTextoComMatematica(alt, chkFracaoInline.checked)}</span></li>`
     ).join('');
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `<ul class="alternativas alternativas--coluna">${itensHtml}</ul>`;
@@ -1031,7 +1166,7 @@
     if (modoPrioridade === 'alternativas') return 'coluna';
 
     const itensHtml = q.alternativas.map((alt, idx) =>
-      `<li><span class="alt-letra">${letraAlternativa(idx)})</span><span>${escapeHtml(alt)}</span></li>`
+      `<li><span class="alt-letra">${letraAlternativa(idx)})</span><span>${renderizarTextoComMatematica(alt, chkFracaoInline.checked)}</span></li>`
     ).join('');
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `<ul class="alternativas alternativas--medindo">${itensHtml}</ul>`;

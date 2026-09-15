@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Montador de Questões — A4</title>
+<link rel="icon" type="image/png" href="Montex_logo.png">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
 </head>
 <body>
 
@@ -81,6 +83,7 @@
         <span class="dica-fonte" id="dicaEspacoAlternativas" hidden>Espaço, em mm, entre as alternativas e a próxima questão. Quanto maior, menos questões cabem por folha.</span>
       </div>
       <label><input type="checkbox" id="chkGabarito"> Marcar alternativa correta (se houver campo "correta")</label>
+      <label><input type="checkbox" id="chkFracaoInline"> Frações nas alternativas no formato a/b (mais compacto, em vez de empilhada)</label>
       <label><input type="checkbox" id="chkEconomiaTinta"> Modo economia de tinta (remove o fundo colorido do banner de seção)</label>
     </div>
   </div>
@@ -109,6 +112,14 @@
       banner que aparece no topo da primeira coluna (ex.: <code>"Exercícios ENEM"</code>,
       <code>"Lista de Exercícios"</code> ou qualquer outro título). Se omitido, o padrão é
       "Exercícios Propostos".
+    </p>
+    <p class="modal-explicacao">
+      <strong>Fórmulas matemáticas:</strong> em <code>enunciado</code>, <code>antecipacao</code> e nas
+      <code>alternativas</code>, escreva a expressão entre <code>$...$</code> (fórmula no meio da frase)
+      ou <code>$$...$$</code> (fórmula centralizada, em bloco) usando a sintaxe LaTeX. Exemplos:
+      fração → <code>$\frac{2}{3}$</code>, potência → <code>$27^{4/3}$</code>, fração de frações →
+      <code>$\frac{\frac{2}{3}^{-2}+\frac{3}{2}^{-3}}{4^{-1}}$</code>, raiz → <code>$\sqrt{x+1}$</code>,
+      incógnita no expoente → <code>$x^{n-1}$</code>.
     </p>
     <div class="alternador-exemplo">
       <label><input type="radio" name="tipoExemplo" value="comGabarito" checked> Com gabarito (campo "correta")</label>
@@ -163,6 +174,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
 <script src="script.js"></script>
 
 </body>

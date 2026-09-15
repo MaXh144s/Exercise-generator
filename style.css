@@ -426,6 +426,19 @@ body.economia-tinta .folha-banner-secao {
   overflow-wrap: break-word;
 }
 
+/* Fração/binomial empilhada (\frac, \dfrac, \tfrac, \binom) dentro de uma
+   fórmula inline: como inline-block ela vira um "bloco" na linha do texto,
+   com margem vertical própria (altura real reservada acima/abaixo, sem
+   encostar na linha de cima/baixo) e largura própria — se não couber no
+   espaço restante da linha, quebra inteira para a linha seguinte em vez de
+   cortar no meio (como uma palavra grande faria). */
+.formula-alta {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  margin: 0.3em 0.15em;
+}
+
 .questao-antecipacao {
   font-size: calc(0.84rem * var(--escala-enunciado));
   line-height: 1.3;
@@ -544,6 +557,21 @@ body.economia-tinta .folha-banner-secao {
 .alt-letra {
   font-weight: bold;
   flex-shrink: 0;
+}
+
+/* Quando a alternativa contém uma fração renderizada pelo KaTeX (span
+   .mfrac), ela ocupa mais altura que uma linha de texto comum (numerador
+   sobre denominador com traço). Sem espaço extra, o texto acima/abaixo
+   fica visualmente espremido contra ela. :has() detecta a presença da
+   fração e aplica padding vertical e espaçamento maior automaticamente,
+   sem precisar de nenhuma opção manual. */
+.alternativas li:has(.mfrac) {
+  padding: 3px 0;
+}
+
+.alternativas--coluna li:has(.mfrac),
+.alternativas-coluna li:has(.mfrac) {
+  margin: 2px 0;
 }
 
 /* Variante: todas as alternativas numa única linha */
